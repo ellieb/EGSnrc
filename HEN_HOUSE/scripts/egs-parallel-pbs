@@ -126,6 +126,16 @@ if [ $trim -gt 0 ]; then
 fi
 log "job name: $jobname"
 
+### remove existing egsjob and lock files
+if [ -e $basename.egsjob]; then
+    log "remove existing egsjob file: $basename.egsjob"
+    /bin/rm $basename.egsjob
+fi
+if [ -e $basename.lock]; then
+    log "remove existing lock file: $basename.lock"
+    /bin/rm $basename.lock
+fi
+
 ### loop to launch nthread pbs jobs
 for job in $(seq 1 $nthread); do
 
@@ -201,9 +211,6 @@ for job in $(seq 1 $nthread); do
         if [ -r $basename.lock ]; then
             content=$(cat $basename.lock)
             log "$jobstr: found $basename.lock: $content"
-        else
-            log "$jobstr: QUIT ($basename.lock does not exist or is not readable)"
-            exit
         fi
         quit_if_done
     fi

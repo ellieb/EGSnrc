@@ -45,6 +45,7 @@ function help {
         -q | --queue        scheduler queue ("long" by default)
         -n | --nthread      number of threads ("8" by default)
         -o | --option       option(s) to pass to job scheduler, in quotes
+        -f | --force        force run, even if lock or egsjob file present
         -v | --verbose      echo detailed egs-parallel log messages to terminal
         -c | --command      command to run, given in quotes
 
@@ -91,6 +92,7 @@ opt_nthread="8"
 opt_delay="0"
 opt_command=""
 opt_options=""
+opt_force="no"
 verbosity="silent"
 declare -a opt_options_array
 
@@ -103,6 +105,7 @@ while [ "$#" -gt 0 ]; do
     # options without arguments
     case $opt in
         -h|--help)      help; exit;;
+        -f|--force)     opt_force="yes";;
         -v|--verbose)   verbosity="verbose"; continue;;
     esac
 
@@ -201,10 +204,23 @@ if ! [ -r $egsinp ]; then
     quit $LINENO "cannot access input file: $egsinp.egsinp"
 fi
 
-### check that there is not currently a .lock file associated with this input file
-lock=$egs_home/$cmd_app/$basename.lock
-if [ -e $lock ]; then
-    quit $LINENO "there is already a lock file for $basename: $lock"
+### prevent the run if lock file or egsjob file present
+if [ "$opt_force" == "no" ]; then
+
+    # check lock file
+    lock=$egs_home/$cmd_app/$basename.lock
+    if [ -e $lock ]; then
+        log "existing lock file: $lock"
+        quit $LINENO "prevent erasing lock file (override with --force)"
+    fi
+
+    # check egsjob file
+    egsjob=$egs_home/$cmd_app/$basename.egsjob
+    if [ -e $egsjob ]; then
+        log  "existing egsjob file: $egsjob"
+        quit $LINENO "prevent erasing egsjob file (override with --force)"
+    fi
+
 fi
 
 ### report command-line options
